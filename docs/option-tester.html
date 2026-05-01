@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Option Tester | American Option Pricing</title>
+  <style>
+    :root {
+      --bg: #f3ecdf;
+      --paper: rgba(255, 250, 241, 0.92);
+      --ink: #13253d;
+      --muted: #627286;
+      --accent: #b85a37;
+      --teal: #1b6f76;
+      --gold: #d19d4d;
+      --line: rgba(19, 37, 61, 0.12);
+      --shadow: 0 24px 70px rgba(19, 37, 61, 0.12);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(209, 157, 77, 0.24), transparent 30%),
+        radial-gradient(circle at top right, rgba(27, 111, 118, 0.18), transparent 28%),
+        linear-gradient(180deg, #efe2cc 0%, #f8f2e7 48%, #f5ede0 100%);
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(19, 37, 61, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(19, 37, 61, 0.03) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.95), rgba(0,0,0,.2));
+    }
+    .wrap {
+      width: min(1200px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+      position: relative;
+      z-index: 1;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      line-height: 1.08;
+    }
+    h1 { font-size: clamp(2.4rem, 4vw, 4.4rem); max-width: 860px; }
+    h2 { font-size: clamp(1.65rem, 2.4vw, 2.3rem); }
+    h3 { font-size: 1.3rem; }
+    p { margin: 0; line-height: 1.75; color: var(--muted); }
+    .hero, .card, .metric, .panel {
+      background: var(--paper);
+      border: 1px solid rgba(255,255,255,.65);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .hero, .card, .panel { padding: 24px; }
+    .metric { padding: 18px 20px; }
+    .hero {
+      padding: 34px;
+      background:
+        linear-gradient(135deg, rgba(255, 249, 239, .97), rgba(248, 238, 218, .9)),
+        var(--paper);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      right: -120px;
+      top: -110px;
+      background: radial-gradient(circle, rgba(184, 90, 55, .18), transparent 72%);
+    }
+    .hero p { margin-top: 18px; max-width: 760px; font-size: 1.03rem; }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 0;
+      text-decoration: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      transition: transform .16s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button-primary { background: linear-gradient(135deg, var(--accent), #d07b53); color: white; }
+    .button-secondary { background: rgba(19,37,61,.08); color: var(--ink); }
+    .section { margin-top: 22px; }
+    .section-header { margin-bottom: 16px; }
+    .grid-2, .grid-3, .metrics-grid, .chart-grid, form, .overview-grid {
+      display: grid;
+      gap: 18px;
+    }
+    .grid-2, .chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3, .metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .overview-grid { grid-template-columns: 0.95fr 1.05fr; }
+    form { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      color: var(--muted);
+      font-size: .92rem;
+      font-weight: 700;
+    }
+    input, select, button { font: inherit; }
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(19,37,61,.14);
+      background: rgba(255,255,255,.92);
+      color: var(--ink);
+    }
+    .metric-label { color: var(--muted); font-size: .9rem; margin-bottom: 10px; }
+    .metric-value {
+      font-size: 2rem;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: var(--ink);
+    }
+    .metric-sub { color: var(--muted); margin-top: 8px; font-size: .9rem; line-height: 1.6; }
+    .table-like {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 10px 16px;
+      margin-top: 16px;
+      font-size: .95rem;
+    }
+    .table-like strong { color: var(--ink); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: .88rem;
+      font-weight: 800;
+      margin-top: 14px;
+    }
+    .pill-good { background: rgba(27,111,118,.12); color: var(--teal); }
+    .pill-warn { background: rgba(184,90,55,.12); color: var(--accent); }
+    .svg-wrap {
+      margin-top: 18px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(19,37,61,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(244,236,222,.92));
+    }
+    svg { display: block; width: 100%; height: auto; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+    .legend-item { display: inline-flex; gap: 8px; align-items: center; }
+    .swatch { width: 12px; height: 12px; border-radius: 999px; }
+    .list { margin: 14px 0 0; padding-left: 18px; color: var(--muted); line-height: 1.8; }
+    .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .96em; }
+    .tiny-note { margin-top: 12px; font-size: .92rem; }
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .insight-card {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.66);
+      border: 1px solid rgba(19,37,61,.08);
+    }
+    .insight-label {
+      color: var(--muted);
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .insight-value {
+      color: var(--ink);
+      font-size: 1.35rem;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      line-height: 1.1;
+    }
+    .insight-sub {
+      color: var(--muted);
+      font-size: .9rem;
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+    .subsection-title {
+      margin-top: 20px;
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 1rem;
+    }
+    .coverage-board {
+      margin-top: 16px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(19,37,61,.08);
+      background: rgba(255,255,255,.62);
+    }
+    .coverage-header,
+    .coverage-row {
+      display: grid;
+      grid-template-columns: 1.05fr 1.05fr .7fr .7fr;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 18px;
+    }
+    .coverage-header {
+      background: rgba(19,37,61,.08);
+      color: var(--ink);
+      font-weight: 800;
+      font-size: .88rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .coverage-row:nth-child(even) {
+      background: rgba(19,37,61,.03);
+    }
+    .coverage-ticker {
+      font-weight: 800;
+      color: var(--ink);
+      font-size: 1.02rem;
+    }
+    .count-chip {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 52px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: .92rem;
+    }
+    .chip-call {
+      background: rgba(27,111,118,.12);
+      color: var(--teal);
+    }
+    .chip-put {
+      background: rgba(184,90,55,.12);
+      color: var(--accent);
+    }
+    .board-note {
+      margin-top: 10px;
+      font-size: .92rem;
+    }
+
+    @media (max-width: 980px) {
+      .grid-2, .grid-3, .metrics-grid, .chart-grid, form, .overview-grid { grid-template-columns: 1fr; }
+      .wrap { width: min(100% - 18px, 1200px); }
+      .hero { padding: 24px; }
+      h1 { font-size: clamp(2.1rem, 7vw, 3.5rem); }
+      .table-like { grid-template-columns: 1fr; }
+      .coverage-header,
+      .coverage-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .insight-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Option Tester with Your Dataset</h1>
+      <p>
+        This page uses the corrected CSV dataset to test real option contracts. First you can scan the dataset visually by ticker, expiry, and option type, then pick a specific row and compare the observed market price with American option values from the binomial and trinomial trees.
+      </p>
+      <div class="hero-actions">
+        <a class="button button-secondary" href="./index.html">Back to Main Project Page</a>
+        <button class="button button-primary" id="reloadDatasetBtn" type="button">Reload Dataset</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="metrics-grid" id="datasetMetrics"></div>
+    </section>
+
+    <section class="section overview-grid">
+      <article class="card">
+        <div class="section-header">
+          <h2>Dataset Coverage Snapshot</h2>
+        </div>
+        <p>This board groups the dataset the same way your screenshot suggests: by ticker, then expiry, then call and put counts.</p>
+        <div class="coverage-board">
+          <div class="coverage-header">
+            <div>Ticker</div>
+            <div>Expiry</div>
+            <div>Call</div>
+            <div>Put</div>
+          </div>
+          <div id="datasetCoverageBoard"></div>
+        </div>
+        <p class="board-note">This helps you verify which tickers and expiries are present before choosing a contract to test.</p>
+      </article>
+
+      <article class="card">
+        <div class="section-header">
+          <h2>Ticker Distribution</h2>
+        </div>
+        <p>This chart shows how many option rows each ticker contributes to the corrected dataset.</p>
+        <div class="svg-wrap">
+          <svg id="tickerChart" viewBox="0 0 620 360" aria-label="Ticker distribution chart"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#1b6f76"></span> Contracts per ticker</div>
+        </div>
+        <div class="insight-grid" id="datasetInsights"></div>
+        <div class="subsection-title">Call vs Put Split by Ticker</div>
+        <p class="tiny-note">This stacked chart shows whether each ticker is balanced between call and put contracts.</p>
+        <div class="svg-wrap">
+          <svg id="tickerSplitChart" viewBox="0 0 620 320" aria-label="Call and put split by ticker"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#1b6f76"></span> Calls</div>
+          <div class="legend-item"><span class="swatch" style="background:#b85a37"></span> Puts</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section grid-2">
+      <article class="card">
+        <div class="section-header">
+          <h2>Dataset Contract</h2>
+        </div>
+        <label>Select option from dataset
+          <select id="contractSelect"></select>
+        </label>
+        <div class="table-like" id="contractSummary"></div>
+        <p class="tiny-note">Source file: <span class="mono">us_options_yfinance_dataset_corrected.csv</span>. If you add more rows later, this dropdown will expand automatically.</p>
+      </article>
+
+      <article class="panel">
+        <div class="section-header">
+          <h2>Model Controls</h2>
+        </div>
+        <form id="testerForm">
+          <label>Spot Price
+            <input id="spot" type="number" step="0.01" />
+          </label>
+          <label>Strike Price
+            <input id="strike" type="number" step="0.01" />
+          </label>
+          <label>Risk-Free Rate
+            <input id="rate" type="number" step="0.001" value="0.06" />
+          </label>
+          <label>Tree Steps
+            <input id="steps" type="number" min="25" step="25" value="200" />
+          </label>
+          <label>Volatility Source
+            <select id="volSource">
+              <option value="implied">Implied Volatility</option>
+              <option value="historical">Historical Volatility</option>
+              <option value="manual">Manual Volatility</option>
+            </select>
+          </label>
+          <label>Volatility Used
+            <input id="volatility" type="number" step="0.0001" />
+          </label>
+          <label>Dividend Yield
+            <input id="dividend" type="number" step="0.001" value="0.00" />
+          </label>
+          <label>Option Type
+            <select id="optionType"></select>
+          </label>
+        </form>
+        <div class="hero-actions">
+          <button class="button button-primary" id="runTestBtn" type="button">Run Option Test</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="section">
+      <div class="metrics-grid" id="metrics"></div>
+    </section>
+
+    <section class="section chart-grid">
+      <article class="card">
+        <h3>Convergence for This Contract</h3>
+        <p>The chart below shows how the price estimate changes as the number of tree steps increases for the selected dataset row.</p>
+        <div class="svg-wrap">
+          <svg id="convergenceChart" viewBox="0 0 620 360" aria-label="Convergence chart"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#b85a37"></span> Binomial</div>
+          <div class="legend-item"><span class="swatch" style="background:#1b6f76"></span> Trinomial</div>
+          <div class="legend-item"><span class="swatch" style="background:#d19d4d"></span> Market mid-price</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Market vs Model</h3>
+        <p>This explanation is generated from the selected option row and the current model settings.</p>
+        <ul class="list" id="interpretation"></ul>
+        <div id="pricingSignal"></div>
+      </article>
+    </section>
+  </div>
+
+  <script src="./us_options_dataset_data.js"></script>
+  <script>
+    const fallbackCsv = window.__OPTIONS_DATASET_CSV__ || "";
+
+    const stepGrid = [25, 50, 75, 100, 125, 150, 175, 200, 250, 300];
+    let datasetRows = [];
+
+    function payoff(stockPrice, strike, optionType) {
+      if (optionType === "call") return Math.max(stockPrice - strike, 0);
+      return Math.max(strike - stockPrice, 0);
+    }
+
+    function formatNumber(value, digits = 4) {
+      if (!Number.isFinite(value)) return "N/A";
+      return Number(value).toFixed(digits);
+    }
+
+    function getObservedMarketPrice(row) {
+      const mid = Number(row.mid_price);
+      const market = Number(row.market_price);
+      const last = Number(row.lastPrice);
+      if (mid > 0) return { price: mid, label: "mid_price" };
+      if (market > 0) return { price: market, label: "market_price" };
+      return { price: last, label: "lastPrice" };
+    }
+
+    function parseCsv(text) {
+      const lines = text.trim().split(/\r?\n/);
+      const headers = lines[0].split(",");
+      return lines.slice(1).filter(Boolean).map((line) => {
+        const values = line.split(",");
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index];
+        });
+        return row;
+      });
+    }
+
+    function normCdf(x) {
+      const sign = x < 0 ? -1 : 1;
+      const absX = Math.abs(x) / Math.sqrt(2);
+      const t = 1 / (1 + 0.3275911 * absX);
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const erf = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+      return 0.5 * (1 + sign * erf);
+    }
+
+    function blackScholesPrice({ spot, strike, maturity, rate, volatility, dividendYield, optionType }) {
+      if (maturity <= 0) return payoff(spot, strike, optionType);
+      if (volatility <= 0) {
+        const forwardIntrinsic = spot * Math.exp(-dividendYield * maturity) - strike * Math.exp(-rate * maturity);
+        return optionType === "call" ? Math.max(forwardIntrinsic, 0) : Math.max(-forwardIntrinsic, 0);
+      }
+      const sqrtT = Math.sqrt(maturity);
+      const d1 = (Math.log(spot / strike) + (rate - dividendYield + 0.5 * volatility * volatility) * maturity) / (volatility * sqrtT);
+      const d2 = d1 - volatility * sqrtT;
+      const discountedSpot = spot * Math.exp(-dividendYield * maturity);
+      const discountedStrike = strike * Math.exp(-rate * maturity);
+      if (optionType === "call") return discountedSpot * normCdf(d1) - discountedStrike * normCdf(d2);
+      return discountedStrike * normCdf(-d2) - discountedSpot * normCdf(-d1);
+    }
+
+    function americanOptionBinomial({ spot, strike, maturity, rate, volatility, dividendYield, steps, optionType }) {
+      const dt = maturity / steps;
+      const u = Math.exp(volatility * Math.sqrt(dt));
+      const d = 1 / u;
+      const growth = Math.exp((rate - dividendYield) * dt);
+      const p = (growth - d) / (u - d);
+      const discount = Math.exp(-rate * dt);
+      let stockPrices = [];
+      let optionValues = [];
+      for (let j = 0; j <= steps; j++) {
+        const s = spot * Math.pow(u, j) * Math.pow(d, steps - j);
+        stockPrices.push(s);
+        optionValues.push(payoff(s, strike, optionType));
+      }
+      for (let i = steps - 1; i >= 0; i--) {
+        const nextStock = [];
+        const nextValues = [];
+        for (let j = 0; j <= i; j++) {
+          const s = stockPrices[j] / d;
+          const continuation = discount * (p * optionValues[j + 1] + (1 - p) * optionValues[j]);
+          const intrinsic = payoff(s, strike, optionType);
+          nextStock.push(s);
+          nextValues.push(Math.max(intrinsic, continuation));
+        }
+        stockPrices = nextStock;
+        optionValues = nextValues;
+      }
+      return { price: optionValues[0] };
+    }
+
+    function americanOptionTrinomial({ spot, strike, maturity, rate, volatility, dividendYield, steps, optionType }) {
+      const dt = maturity / steps;
+      const up = Math.exp(volatility * Math.sqrt(2 * dt));
+      const discount = Math.exp(-rate * dt);
+      const expHalfDrift = Math.exp((rate - dividendYield) * dt / 2);
+      const expUpHalf = Math.exp(volatility * Math.sqrt(dt / 2));
+      const expDownHalf = Math.exp(-volatility * Math.sqrt(dt / 2));
+      const denominator = expUpHalf - expDownHalf;
+
+      let pUp = Math.pow((expHalfDrift - expDownHalf) / denominator, 2);
+      let pDown = Math.pow((expUpHalf - expHalfDrift) / denominator, 2);
+      let pMid = 1 - pUp - pDown;
+      pUp = Math.max(0, pUp);
+      pMid = Math.max(0, pMid);
+      pDown = Math.max(0, pDown);
+      const total = pUp + pMid + pDown;
+      pUp /= total; pMid /= total; pDown /= total;
+
+      let optionValues = new Array(2 * steps + 1).fill(0);
+      for (let k = -steps; k <= steps; k++) {
+        optionValues[k + steps] = payoff(spot * Math.pow(up, k), strike, optionType);
+      }
+      for (let i = steps - 1; i >= 0; i--) {
+        const next = new Array(2 * steps + 1).fill(0);
+        for (let k = -i; k <= i; k++) {
+          const s = spot * Math.pow(up, k);
+          const continuation = discount * (
+            pUp * optionValues[k + steps + 1] +
+            pMid * optionValues[k + steps] +
+            pDown * optionValues[k + steps - 1]
+          );
+          const intrinsic = payoff(s, strike, optionType);
+          next[k + steps] = Math.max(intrinsic, continuation);
+        }
+        optionValues = next;
+      }
+      return { price: optionValues[steps] };
+    }
+
+    function renderLineChart(svgId, series, options) {
+      const svg = document.getElementById(svgId);
+      const width = 620;
+      const height = 360;
+      const margin = { top: 20, right: 18, bottom: 42, left: 58 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      const xValues = series.flatMap((entry) => entry.points.map((point) => point.x));
+      const yValues = series.flatMap((entry) => entry.points.map((point) => point.y)).filter((v) => Number.isFinite(v));
+      const xMin = Math.min(...xValues);
+      const xMax = Math.max(...xValues);
+      let yMin = Math.min(...yValues);
+      let yMax = Math.max(...yValues);
+      if (yMin === yMax) { yMin -= 1; yMax += 1; }
+      const pad = (yMax - yMin) * 0.08;
+      yMin -= pad; yMax += pad;
+      const xScale = (x) => margin.left + ((x - xMin) / (xMax - xMin || 1)) * innerWidth;
+      const yScale = (y) => margin.top + innerHeight - ((y - yMin) / (yMax - yMin || 1)) * innerHeight;
+
+      const grid = [];
+      for (let i = 0; i <= 5; i++) {
+        const value = yMin + ((yMax - yMin) * i) / 5;
+        const y = yScale(value);
+        grid.push(`<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="rgba(19,37,61,0.10)" stroke-dasharray="3 6" />`);
+        grid.push(`<text x="${margin.left - 10}" y="${y + 4}" text-anchor="end" fill="#627286" font-size="11">${value.toFixed(2)}</text>`);
+      }
+
+      const xTicks = [...new Set(xValues)];
+      const xLabels = xTicks.map((value) => {
+        const x = xScale(value);
+        return `<line x1="${x}" y1="${height - margin.bottom}" x2="${x}" y2="${height - margin.bottom + 6}" stroke="rgba(19,37,61,0.28)" />
+          <text x="${x}" y="${height - margin.bottom + 22}" text-anchor="middle" fill="#627286" font-size="11">${value}</text>`;
+      }).join("");
+
+      const paths = series.map((entry) => {
+        const validPoints = entry.points.filter((point) => Number.isFinite(point.y));
+        const path = validPoints.map((point, index) => `${index === 0 ? "M" : "L"} ${xScale(point.x)} ${yScale(point.y)}`).join(" ");
+        const dots = validPoints.map((point) => `<circle cx="${xScale(point.x)}" cy="${yScale(point.y)}" r="3.1" fill="${entry.color}" />`).join("");
+        return `<path d="${path}" fill="none" stroke="${entry.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />${dots}`;
+      }).join("");
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+        ${grid.join("")}
+        <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="rgba(19,37,61,0.28)" />
+        <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="rgba(19,37,61,0.28)" />
+        ${xLabels}
+        ${paths}
+        <text x="${width / 2}" y="${height - 8}" text-anchor="middle" fill="#627286" font-size="12">${options.xLabel}</text>
+        <text x="18" y="${height / 2}" text-anchor="middle" fill="#627286" font-size="12" transform="rotate(-90 18 ${height / 2})">${options.yLabel}</text>
+      `;
+    }
+
+    function parseDateOnly(text) {
+      return new Date(`${text}T00:00:00Z`);
+    }
+
+    function renderBarChart(svgId, items, options) {
+      const svg = document.getElementById(svgId);
+      const width = 620;
+      const height = Math.max(260, items.length * 56 + 40);
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      const left = 110;
+      const top = 24;
+      const barHeight = 22;
+      const gap = 26;
+      const maxValue = Math.max(...items.map((item) => item.value), 1);
+      const innerWidth = width - left - 40;
+
+      const rows = items.map((item, index) => {
+        const y = top + index * (barHeight + gap);
+        const barWidth = (item.value / maxValue) * innerWidth;
+        return `
+          <text x="26" y="${y + 15}" fill="#13253d" font-size="13" font-weight="700">${item.label}</text>
+          <rect x="${left}" y="${y}" width="${innerWidth}" height="${barHeight}" rx="11" fill="rgba(19,37,61,0.06)"></rect>
+          <rect x="${left}" y="${y}" width="${barWidth}" height="${barHeight}" rx="11" fill="${options.color}"></rect>
+          <text x="${left + barWidth + 10}" y="${y + 15}" fill="#627286" font-size="12" font-weight="700">${item.value}</text>
+        `;
+      }).join("");
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+        ${rows}
+      `;
+    }
+
+    function renderStackedTickerSplitChart(svgId, items) {
+      const svg = document.getElementById(svgId);
+      const width = 620;
+      const height = Math.max(260, items.length * 58 + 36);
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      const left = 110;
+      const top = 24;
+      const barHeight = 22;
+      const gap = 26;
+      const maxValue = Math.max(...items.map((item) => item.calls + item.puts), 1);
+      const innerWidth = width - left - 42;
+
+      const rows = items.map((item, index) => {
+        const y = top + index * (barHeight + gap);
+        const total = item.calls + item.puts;
+        const totalWidth = (total / maxValue) * innerWidth;
+        const callWidth = total === 0 ? 0 : (item.calls / total) * totalWidth;
+        const putWidth = totalWidth - callWidth;
+        return `
+          <text x="26" y="${y + 15}" fill="#13253d" font-size="13" font-weight="700">${item.label}</text>
+          <rect x="${left}" y="${y}" width="${innerWidth}" height="${barHeight}" rx="11" fill="rgba(19,37,61,0.06)"></rect>
+          <rect x="${left}" y="${y}" width="${callWidth}" height="${barHeight}" rx="11" fill="#1b6f76"></rect>
+          <rect x="${left + callWidth}" y="${y}" width="${putWidth}" height="${barHeight}" rx="11" fill="#b85a37"></rect>
+          <text x="${left + totalWidth + 10}" y="${y + 15}" fill="#627286" font-size="12" font-weight="700">${total}</text>
+        `;
+      }).join("");
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+        ${rows}
+      `;
+    }
+
+    function selectedRow() {
+      const index = Number(document.getElementById("contractSelect").value);
+      return datasetRows[index];
+    }
+
+    function getMaturityYears(row) {
+      const trade = new Date(row.lastTradeDate);
+      const expiry = parseDateOnly(row.expiry);
+      const days = Math.max((expiry - trade) / (1000 * 60 * 60 * 24), 0);
+      return { years: days / 365, days };
+    }
+
+    function fillControlsFromRow(row) {
+      document.getElementById("spot").value = Number(row.spot_price).toFixed(2);
+      document.getElementById("strike").value = Number(row.strike).toFixed(2);
+      document.getElementById("optionType").innerHTML = `<option value="${String(row.option_type).toLowerCase()}">${row.option_type}</option>`;
+      document.getElementById("dividend").value = formatNumber(Number(row.dividend_yield || 0), 6);
+      updateVolatilityInput(row);
+      renderContractSummary(row);
+    }
+
+    function updateVolatilityInput(row) {
+      const source = document.getElementById("volSource").value;
+      if (source === "implied") {
+        document.getElementById("volatility").value = Number(row.impliedVolatility).toFixed(6);
+      } else if (source === "historical") {
+        document.getElementById("volatility").value = Number(row.historical_volatility).toFixed(6);
+      }
+    }
+
+    function renderContractSummary(row) {
+      const maturity = getMaturityYears(row);
+      const observed = getObservedMarketPrice(row);
+      document.getElementById("contractSummary").innerHTML = `
+        <strong>Contract</strong><span>${row.contractSymbol}</span>
+        <strong>Ticker</strong><span>${row.ticker}</span>
+        <strong>Option Type</strong><span>${row.option_type}</span>
+        <strong>Last Trade Date</strong><span>${row.lastTradeDate}</span>
+        <strong>Expiry</strong><span>${row.expiry}</span>
+        <strong>Time to Expiry</strong><span>${formatNumber(maturity.days, 0)} days (${formatNumber(maturity.years, 4)} years)</span>
+        <strong>Observed Market Price</strong><span>${formatNumber(observed.price)} from ${observed.label}</span>
+        <strong>Bid / Ask</strong><span>${formatNumber(row.bid)} / ${formatNumber(row.ask)}</span>
+        <strong>Implied Volatility</strong><span>${formatNumber(row.impliedVolatility, 6)}</span>
+        <strong>Historical Volatility</strong><span>${formatNumber(row.historical_volatility, 6)}</span>
+      `;
+    }
+
+    function summarizeDataset(rows) {
+      const tickerCounts = new Map();
+      const grouped = new Map();
+      const expiries = new Set();
+      const expiryCounts = new Map();
+      const typeTotals = new Map([["Call", 0], ["Put", 0]]);
+      const tickerTypeCounts = new Map();
+
+      rows.forEach((row) => {
+        const ticker = row.ticker;
+        const expiry = row.expiry;
+        const optionType = row.option_type;
+        expiries.add(expiry);
+        tickerCounts.set(ticker, (tickerCounts.get(ticker) || 0) + 1);
+        expiryCounts.set(expiry, (expiryCounts.get(expiry) || 0) + 1);
+        typeTotals.set(optionType, (typeTotals.get(optionType) || 0) + 1);
+
+        if (!tickerTypeCounts.has(ticker)) {
+          tickerTypeCounts.set(ticker, { label: ticker, calls: 0, puts: 0 });
+        }
+        if (optionType === "Call") tickerTypeCounts.get(ticker).calls += 1;
+        if (optionType === "Put") tickerTypeCounts.get(ticker).puts += 1;
+
+        const key = `${ticker}__${expiry}`;
+        if (!grouped.has(key)) {
+          grouped.set(key, { ticker, expiry, Call: 0, Put: 0 });
+        }
+        grouped.get(key)[optionType] = (grouped.get(key)[optionType] || 0) + 1;
+      });
+
+      const sortedTickerCounts = [...tickerCounts.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => a.label.localeCompare(b.label));
+      const sortedExpiryCounts = [...expiryCounts.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+      const topTicker = [...sortedTickerCounts].sort((a, b) => b.value - a.value)[0];
+      const bottomTicker = [...sortedTickerCounts].sort((a, b) => a.value - b.value)[0];
+
+      return {
+        totalRows: rows.length,
+        totalTickers: tickerCounts.size,
+        totalExpiries: expiries.size,
+        totalCalls: typeTotals.get("Call") || 0,
+        totalPuts: typeTotals.get("Put") || 0,
+        tickerCounts: sortedTickerCounts,
+        groupedRows: [...grouped.values()].sort((a, b) => a.ticker.localeCompare(b.ticker) || a.expiry.localeCompare(b.expiry)),
+        tickerSplit: [...tickerTypeCounts.values()].sort((a, b) => a.label.localeCompare(b.label)),
+        topTicker,
+        bottomTicker,
+        topExpiry: sortedExpiryCounts[0]
+      };
+    }
+
+    function renderDatasetOverview(rows) {
+      const summary = summarizeDataset(rows);
+      document.getElementById("datasetMetrics").innerHTML = `
+        <article class="metric">
+          <div class="metric-label">Total Option Rows</div>
+          <div class="metric-value">${summary.totalRows}</div>
+          <div class="metric-sub">All contracts available in the corrected dataset.</div>
+        </article>
+        <article class="metric">
+          <div class="metric-label">Unique Tickers</div>
+          <div class="metric-value">${summary.totalTickers}</div>
+          <div class="metric-sub">Tickers currently covered in the file.</div>
+        </article>
+        <article class="metric">
+          <div class="metric-label">Unique Expiries</div>
+          <div class="metric-value">${summary.totalExpiries}</div>
+          <div class="metric-sub">Different expiry dates represented across tickers.</div>
+        </article>
+      `;
+
+      document.getElementById("datasetCoverageBoard").innerHTML = summary.groupedRows.map((row) => `
+        <div class="coverage-row">
+          <div class="coverage-ticker">${row.ticker}</div>
+          <div>${row.expiry}</div>
+          <div><span class="count-chip chip-call">${row.Call || 0}</span></div>
+          <div><span class="count-chip chip-put">${row.Put || 0}</span></div>
+        </div>
+      `).join("");
+
+      renderBarChart("tickerChart", summary.tickerCounts, { color: "#1b6f76" });
+      renderStackedTickerSplitChart("tickerSplitChart", summary.tickerSplit);
+      document.getElementById("datasetInsights").innerHTML = `
+        <div class="insight-card">
+          <div class="insight-label">Most Covered Ticker</div>
+          <div class="insight-value">${summary.topTicker.label}</div>
+          <div class="insight-sub">${summary.topTicker.value} total option rows</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Least Covered Ticker</div>
+          <div class="insight-value">${summary.bottomTicker.label}</div>
+          <div class="insight-sub">${summary.bottomTicker.value} total option rows</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Call vs Put Balance</div>
+          <div class="insight-value">${summary.totalCalls} / ${summary.totalPuts}</div>
+          <div class="insight-sub">Total calls and puts across the full dataset</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Busiest Expiry</div>
+          <div class="insight-value">${summary.topExpiry.label}</div>
+          <div class="insight-sub">${summary.topExpiry.value} contracts share this expiry date</div>
+        </div>
+      `;
+    }
+
+    function renderMetrics(result) {
+      const mispricingBinomial = result.binomial - result.marketMid;
+      const mispricingTrinomial = result.trinomial - result.marketMid;
+      const cards = [
+        {
+          label: "Observed Market Price",
+          value: formatNumber(result.marketMid),
+          sub: `Taken from ${result.marketLabel} in the dataset row.`
+        },
+        {
+          label: "American Binomial Price",
+          value: formatNumber(result.binomial),
+          sub: `Difference vs observed market price: ${formatNumber(mispricingBinomial)}`
+        },
+        {
+          label: "American Trinomial Price",
+          value: formatNumber(result.trinomial),
+          sub: `Difference vs observed market price: ${formatNumber(mispricingTrinomial)}`
+        },
+        {
+          label: "European Benchmark",
+          value: formatNumber(result.european),
+          sub: "Black-Scholes benchmark using the same selected volatility."
+        },
+        {
+          label: "Volatility Used",
+          value: formatNumber(result.volatility, 6),
+          sub: `Source: ${result.volSource}`
+        },
+        {
+          label: "Time to Expiry",
+          value: `${formatNumber(result.days, 0)} days`,
+          sub: `${formatNumber(result.maturity, 4)} years between trade date and expiry.`
+        }
+      ];
+      document.getElementById("metrics").innerHTML = cards.map((card) => `
+        <article class="metric">
+          <div class="metric-label">${card.label}</div>
+          <div class="metric-value">${card.value}</div>
+          <div class="metric-sub">${card.sub}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderInterpretation(result, row, study) {
+      const modelGap = Math.abs(result.binomial - result.trinomial);
+      const bestModel = Math.abs(result.binomial - result.marketMid) <= Math.abs(result.trinomial - result.marketMid) ? "binomial" : "trinomial";
+      const items = [
+        `For ${row.contractSymbol}, the observed market price in the dataset is ${formatNumber(result.marketMid)} from ${result.marketLabel}.`,
+        `Using ${result.volSource} volatility of ${formatNumber(result.volatility, 6)}, the binomial tree gives ${formatNumber(result.binomial)} and the trinomial tree gives ${formatNumber(result.trinomial)}.`,
+        `The European benchmark is ${formatNumber(result.european)}, so you can see how much value is being added by the American early-exercise feature.`,
+        `The gap between the two American numerical methods is ${formatNumber(modelGap)}, which helps you judge whether the estimates are converging to a similar result.`,
+        `At the current settings, the ${bestModel} tree is closer to the observed market price than the other model.`
+      ];
+      if (String(row.option_type).toLowerCase() === "put") {
+        items.push("Because this row is a put, it is reasonable to expect the American price to be at least as large as the European value, since early exercise can become useful.");
+      }
+      document.getElementById("interpretation").innerHTML = items.map((item) => `<li>${item}</li>`).join("");
+
+      const closestDiff = Math.min(Math.abs(result.binomial - result.marketMid), Math.abs(result.trinomial - result.marketMid));
+      document.getElementById("pricingSignal").innerHTML = closestDiff < 2
+        ? `<div class="pill pill-good">Model prices are relatively close to the observed dataset price.</div>`
+        : `<div class="pill pill-warn">Model prices differ noticeably from the observed dataset price, so assumptions like volatility or rates may need adjustment.</div>`;
+    }
+
+    function runOptionTest() {
+      const row = selectedRow();
+      const maturityInfo = getMaturityYears(row);
+      const inputs = {
+        spot: Number(document.getElementById("spot").value),
+        strike: Number(document.getElementById("strike").value),
+        maturity: maturityInfo.years,
+        days: maturityInfo.days,
+        rate: Number(document.getElementById("rate").value),
+        volatility: Number(document.getElementById("volatility").value),
+        dividendYield: Number(document.getElementById("dividend").value),
+        steps: Number(document.getElementById("steps").value),
+        optionType: document.getElementById("optionType").value
+      };
+
+      const binomial = americanOptionBinomial(inputs).price;
+      const trinomial = americanOptionTrinomial(inputs).price;
+      const european = blackScholesPrice(inputs);
+      const observed = getObservedMarketPrice(row);
+      const marketMid = observed.price;
+      const study = stepGrid.map((steps) => {
+        const params = { ...inputs, steps };
+        return {
+          steps,
+          binomial: americanOptionBinomial(params).price,
+          trinomial: americanOptionTrinomial(params).price,
+          marketMid
+        };
+      });
+
+      renderMetrics({
+        marketMid,
+        binomial,
+        trinomial,
+        european,
+        volatility: inputs.volatility,
+        volSource: document.getElementById("volSource").value,
+        maturity: inputs.maturity,
+        days: inputs.days,
+        marketLabel: observed.label
+      });
+
+      renderLineChart("convergenceChart", [
+        {
+          color: "#b85a37",
+          points: study.map((rowEntry) => ({ x: rowEntry.steps, y: rowEntry.binomial }))
+        },
+        {
+          color: "#1b6f76",
+          points: study.map((rowEntry) => ({ x: rowEntry.steps, y: rowEntry.trinomial }))
+        },
+        {
+          color: "#d19d4d",
+          points: study.map((rowEntry) => ({ x: rowEntry.steps, y: rowEntry.marketMid }))
+        }
+      ], {
+        xLabel: "Tree steps",
+        yLabel: "Option price"
+      });
+
+      renderInterpretation({
+        marketMid,
+        binomial,
+        trinomial,
+        european,
+        volatility: inputs.volatility,
+        volSource: document.getElementById("volSource").value,
+        marketLabel: observed.label
+      }, row, study);
+    }
+
+    async function loadDataset() {
+      let csvText = fallbackCsv;
+      try {
+        const response = await fetch("./us_options_yfinance_dataset_corrected.csv");
+        if (response.ok) {
+          csvText = await response.text();
+        }
+      } catch (error) {
+        console.warn("Using fallback dataset because fetch failed.", error);
+      }
+
+      datasetRows = parseCsv(csvText);
+      renderDatasetOverview(datasetRows);
+      const select = document.getElementById("contractSelect");
+      select.innerHTML = datasetRows.map((row, index) => `
+        <option value="${index}">${row.ticker} | ${row.option_type} | K=${formatNumber(row.strike, 2)} | Exp ${row.expiry}</option>
+      `).join("");
+
+      const row = selectedRow();
+      fillControlsFromRow(row);
+      runOptionTest();
+    }
+
+    document.getElementById("contractSelect").addEventListener("change", () => {
+      const row = selectedRow();
+      fillControlsFromRow(row);
+      runOptionTest();
+    });
+
+    document.getElementById("volSource").addEventListener("change", () => {
+      const row = selectedRow();
+      updateVolatilityInput(row);
+      runOptionTest();
+    });
+
+    document.getElementById("runTestBtn").addEventListener("click", runOptionTest);
+    document.getElementById("reloadDatasetBtn").addEventListener("click", loadDataset);
+
+    loadDataset();
+  </script>
+</body>
+</html>

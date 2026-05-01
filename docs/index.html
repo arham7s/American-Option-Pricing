@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>American Option Pricing Explained | Binomial and Trinomial Trees</title>
+  <style>
+    :root {
+      --bg: #f4ecde;
+      --paper: rgba(255, 250, 241, 0.9);
+      --paper-strong: rgba(255, 255, 255, 0.95);
+      --ink: #11263d;
+      --muted: #607084;
+      --accent: #bc5a35;
+      --accent-soft: rgba(188, 90, 53, 0.12);
+      --teal: #176d77;
+      --teal-soft: rgba(23, 109, 119, 0.12);
+      --gold: #d49f50;
+      --gold-soft: rgba(212, 159, 80, 0.16);
+      --line: rgba(17, 38, 61, 0.12);
+      --shadow: 0 24px 70px rgba(17, 38, 61, 0.12);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(212, 159, 80, 0.28), transparent 28%),
+        radial-gradient(circle at top right, rgba(23, 109, 119, 0.22), transparent 26%),
+        linear-gradient(180deg, #efe3cd 0%, #f7f1e6 48%, #f4ede0 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(17, 38, 61, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 38, 61, 0.03) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.2));
+    }
+
+    .wrap {
+      width: min(1200px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      line-height: 1.08;
+    }
+
+    h1 {
+      font-size: clamp(2.6rem, 4.4vw, 4.7rem);
+      max-width: 940px;
+    }
+
+    h2 {
+      font-size: clamp(1.7rem, 2.4vw, 2.4rem);
+    }
+
+    h3 {
+      font-size: 1.38rem;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+
+    .hero,
+    .card,
+    .panel,
+    .metric,
+    .mini-card,
+    .callout {
+      background: var(--paper);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(255, 249, 239, 0.97), rgba(248, 238, 218, 0.9)),
+        var(--paper);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      right: -140px;
+      top: -130px;
+      background: radial-gradient(circle, rgba(188, 90, 53, 0.18), transparent 72%);
+    }
+
+    .hero p {
+      max-width: 800px;
+      margin-top: 18px;
+      font-size: 1.03rem;
+    }
+
+    .hero-grid,
+    .grid-2,
+    .grid-3,
+    .metrics-grid,
+    .chart-grid,
+    .formula-grid,
+    .tree-layout,
+    .definition-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-grid {
+      grid-template-columns: 1.4fr 0.95fr;
+      margin-top: 26px;
+      align-items: start;
+    }
+
+    .grid-2,
+    .formula-grid,
+    .tree-layout {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3,
+    .metrics-grid,
+    .definition-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .chart-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .section {
+      margin-top: 22px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      max-width: 760px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(17, 38, 61, 0.06);
+      border: 1px solid rgba(17, 38, 61, 0.1);
+      font-size: 0.92rem;
+      color: var(--ink);
+    }
+
+    .hero-aside {
+      padding: 24px;
+      border-radius: 26px;
+      background: linear-gradient(145deg, rgba(17, 38, 61, 0.96), rgba(23, 109, 119, 0.9));
+      color: #fffaf2;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-aside::after {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      right: -54px;
+      bottom: -76px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212, 159, 80, 0.35), transparent 70%);
+    }
+
+    .hero-aside h3,
+    .hero-aside p,
+    .hero-aside li {
+      color: #fff7ea;
+    }
+
+    .hero-aside ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      line-height: 1.8;
+    }
+
+    .card,
+    .panel {
+      padding: 24px;
+    }
+
+    .mini-card {
+      padding: 18px;
+    }
+
+    .callout {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(255, 249, 239, 0.95), rgba(255, 255, 255, 0.92));
+    }
+
+    .step-tag {
+      display: inline-block;
+      margin-bottom: 10px;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .formula-box {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(17, 38, 61, 0.05);
+      border: 1px solid rgba(17, 38, 61, 0.06);
+      font-family: Georgia, serif;
+      font-size: 1.02rem;
+      line-height: 1.85;
+      color: var(--ink);
+    }
+
+    .definition {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(17, 38, 61, 0.08);
+    }
+
+    .definition strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 14px;
+      align-items: stretch;
+      margin-top: 18px;
+    }
+
+    .comparison-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+      color: var(--gold);
+    }
+
+    .comparison-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(17, 38, 61, 0.08);
+    }
+
+    .comparison-card h4 {
+      margin-bottom: 8px;
+      font-size: 1.15rem;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(17, 38, 61, 0.14);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink);
+      padding: 12px 14px;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      cursor: pointer;
+      transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #d17a52);
+      color: white;
+      font-weight: 800;
+    }
+
+    .secondary {
+      background: rgba(17, 38, 61, 0.08);
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .metric {
+      padding: 18px 20px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: var(--ink);
+    }
+
+    .metric-sub {
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .formula-value {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      color: var(--ink);
+      font-size: 0.95rem;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(17, 38, 61, 0.05);
+    }
+
+    .formula-explain {
+      margin-top: 12px;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .svg-wrap {
+      margin-top: 18px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(17, 38, 61, 0.08);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 236, 222, 0.92));
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+    }
+
+    .tree-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .tree-controls label {
+      min-width: 180px;
+      flex: 1;
+    }
+
+    .range-value {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      color: var(--teal);
+      font-weight: 800;
+    }
+
+    .tree-node-note {
+      margin-top: 12px;
+      font-size: 0.94rem;
+      color: var(--muted);
+    }
+
+    .node-detail {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(17, 38, 61, 0.08);
+    }
+
+    .node-detail h4 {
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+    }
+
+    .node-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .node-detail-grid div {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(17, 38, 61, 0.05);
+      color: var(--ink);
+      font-size: 0.94rem;
+      line-height: 1.55;
+    }
+
+    .inline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      margin-top: 14px;
+    }
+
+    .badge-exercise {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .badge-hold {
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
+
+    .insight-list,
+    .roadmap-list {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 0.93rem;
+      color: var(--muted);
+    }
+
+    .mono {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.96em;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .grid-2,
+      .grid-3,
+      .metrics-grid,
+      .chart-grid,
+      .formula-grid,
+      .tree-layout,
+      .definition-grid,
+      form,
+      .comparison-grid,
+      .node-detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-arrow {
+        transform: rotate(90deg);
+      }
+
+      .hero {
+        padding: 24px;
+      }
+
+      .wrap {
+        width: min(100% - 18px, 1200px);
+      }
+
+      h1 {
+        font-size: clamp(2.2rem, 7vw, 3.6rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>American Option Pricing with Binomial and Trinomial Trees</h1>
+      <p>
+        This page explains American option pricing from the ground up. Instead of only showing the final number, it breaks the process into simple ideas: what an option is, why American options are harder to price, how tree methods work, what each formula means, and how early exercise changes the answer.
+      </p>
+
+      <div class="hero-grid">
+        <div>
+          <div class="pill-row">
+            <div class="pill">Beginner explanations</div>
+            <div class="pill">Live formulas with meanings</div>
+            <div class="pill">Interactive pricing lab</div>
+            <div class="pill">Clickable tree walkthrough</div>
+            <div class="pill">Convergence and runtime charts</div>
+          </div>
+          <div class="action-row" style="margin-top:18px;">
+            <a href="./option-tester.html" class="primary" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; padding:12px 18px; border-radius:999px; font-weight:800;">Open Dataset Option Tester</a>
+          </div>
+        </div>
+        <aside class="hero-aside">
+          <h3>Why this topic matters</h3>
+          <p>
+            American options can be exercised before expiry, so we cannot just price them with one closed-form formula in the usual way.
+          </p>
+          <ul>
+            <li>At every step, we compare two choices: exercise now or keep the option alive.</li>
+            <li>The tree models make that comparison explicit.</li>
+            <li>Binomial trees are simple and intuitive.</li>
+            <li>Trinomial trees often give smoother convergence.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>Beginner Roadmap</h2>
+          <p>If you are new to this topic, follow the ideas below in order. The page is built so each section teaches one layer before moving to the next.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <article class="mini-card">
+          <div class="step-tag">Step 1</div>
+          <h3>Know the contract</h3>
+          <p>An option gives the holder the right, not the obligation, to buy or sell an asset at a fixed strike price.</p>
+          <ul class="roadmap-list">
+            <li>A call gives the right to buy.</li>
+            <li>A put gives the right to sell.</li>
+            <li>The strike price is fixed in advance.</li>
+          </ul>
+        </article>
+        <article class="mini-card">
+          <div class="step-tag">Step 2</div>
+          <h3>Understand the American feature</h3>
+          <p>American options can be exercised any time up to expiry, so we must check whether exercising early is better than waiting.</p>
+          <ul class="roadmap-list">
+            <li>European options only allow exercise at maturity.</li>
+            <li>American options add a decision at every step.</li>
+          </ul>
+        </article>
+        <article class="mini-card">
+          <div class="step-tag">Step 3</div>
+          <h3>Use a tree to value choices</h3>
+          <p>A pricing tree lists possible stock prices over time and works backward from the final payoffs to today’s price.</p>
+          <ul class="roadmap-list">
+            <li>Move forward to build stock paths.</li>
+            <li>Move backward to price the option.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section card">
+      <div class="section-header">
+        <div>
+          <h2>American vs European Options</h2>
+          <p>This is the first big concept to understand. The difference is not the payoff formula itself. The difference is when the holder is allowed to exercise.</p>
+        </div>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <h4>European Option</h4>
+          <p>You can exercise only at expiry. Because there is no exercise decision before maturity, the pricing problem is simpler.</p>
+        </div>
+        <div class="comparison-arrow">→</div>
+        <div class="comparison-card">
+          <h4>American Option</h4>
+          <p>You can exercise at any time up to expiry. That means every node in the tree asks: “Should I exercise now or continue?”</p>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:18px;">
+        <h3 style="margin-bottom:10px;">Intuition in plain words</h3>
+        <p>
+          If immediate exercise gives more value than holding the option for later, the rational holder exercises. This is why the price of an American option is never less than the value from simply continuing forward in the tree.
+        </p>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-header">
+        <div>
+          <h2>Interactive Pricing Lab</h2>
+          <p>Change the inputs and the entire page updates: formulas, metrics, charts, the mini teaching tree, and the explanation of what the numbers mean.</p>
+        </div>
+      </div>
+
+      <form id="pricing-form">
+        <label>Spot Price (S)
+          <input id="spot" type="number" step="0.01" value="100" />
+        </label>
+        <label>Strike Price (K)
+          <input id="strike" type="number" step="0.01" value="100" />
+        </label>
+        <label>Maturity in Years (T)
+          <input id="maturity" type="number" step="0.01" value="1" />
+        </label>
+        <label>Risk-Free Rate (r)
+          <input id="rate" type="number" step="0.001" value="0.06" />
+        </label>
+        <label>Volatility (σ)
+          <input id="volatility" type="number" step="0.001" value="0.20" />
+        </label>
+        <label>Dividend Yield (q)
+          <input id="dividend" type="number" step="0.001" value="0.00" />
+        </label>
+        <label>Tree Steps (N)
+          <input id="steps" type="number" min="10" step="5" value="200" />
+        </label>
+        <label>Option Type
+          <select id="optionType">
+            <option value="put">American Put</option>
+            <option value="call">American Call</option>
+          </select>
+        </label>
+      </form>
+
+      <div class="action-row">
+        <button class="primary" id="runBtn" type="button">Update Project View</button>
+        <button class="secondary" id="presetPutBtn" type="button">Load Put Example</button>
+        <button class="secondary" id="presetCallBtn" type="button">Load Call Example</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="metrics-grid" id="metrics"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>Formula Explorer</h2>
+          <p>The formulas below are the heart of the model. Each one updates using your current inputs, and each symbol is explained in plain English.</p>
+        </div>
+      </div>
+
+      <div class="formula-grid">
+        <article class="card">
+          <div class="step-tag">Tree Setup</div>
+          <h3>How time is split</h3>
+          <div class="formula-box">
+            Δt = T / N
+          </div>
+          <div class="formula-value" id="dtValue"></div>
+          <ul class="formula-explain">
+            <li><strong>T</strong> is total time to maturity.</li>
+            <li><strong>N</strong> is the number of time steps in the tree.</li>
+            <li><strong>Δt</strong> is the length of one step.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="step-tag">Stock Movement</div>
+          <h3>Up and down multipliers</h3>
+          <div class="formula-box">
+            u = e<sup>σ√Δt</sup>, &nbsp; d = 1 / u
+          </div>
+          <div class="formula-value" id="udValue"></div>
+          <ul class="formula-explain">
+            <li><strong>u</strong> tells us how much the stock grows in one up move.</li>
+            <li><strong>d</strong> tells us how much the stock falls in one down move.</li>
+            <li><strong>σ</strong> is volatility, which controls how wide the tree becomes.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="step-tag">Risk-Neutral Probability</div>
+          <h3>Pricing probability, not real-world probability</h3>
+          <div class="formula-box">
+            p = (e<sup>(r-q)Δt</sup> - d) / (u - d)
+          </div>
+          <div class="formula-value" id="pValue"></div>
+          <ul class="formula-explain">
+            <li><strong>r</strong> is the risk-free rate.</li>
+            <li><strong>q</strong> is the dividend yield.</li>
+            <li><strong>p</strong> is used only for pricing under the risk-neutral measure.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="step-tag">American Option Rule</div>
+          <h3>Exercise now or continue?</h3>
+          <div class="formula-box">
+            V = max(intrinsic value, discounted continuation value)
+          </div>
+          <div class="formula-value" id="decisionValue"></div>
+          <ul class="formula-explain">
+            <li><strong>Intrinsic value</strong> is what you get by exercising immediately.</li>
+            <li><strong>Continuation value</strong> is the expected future value if you keep the option alive.</li>
+            <li>The larger of the two becomes the American option value at that node.</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="definition-grid section">
+        <div class="definition">
+          <strong>Call payoff</strong>
+          <p>max(S - K, 0). A call is valuable only when the stock price is above the strike.</p>
+        </div>
+        <div class="definition">
+          <strong>Put payoff</strong>
+          <p>max(K - S, 0). A put is valuable only when the stock price is below the strike.</p>
+        </div>
+        <div class="definition">
+          <strong>Discounting</strong>
+          <p>Future cash flows are multiplied by e<sup>-rΔt</sup> to convert them back to present value.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <div class="section-header">
+        <div>
+          <h2>Clickable Tree Walkthrough</h2>
+          <p>This mini-tree uses a small number of steps so you can inspect the nodes one by one. Switch between binomial and trinomial trees, then click a node to see the stock price, immediate exercise payoff, continuation value, and final American value at that point.</p>
+        </div>
+      </div>
+
+      <div class="tree-controls">
+        <label>Teaching tree type
+          <select id="teachingTreeType">
+            <option value="binomial">Binomial Tree</option>
+            <option value="trinomial">Trinomial Tree</option>
+          </select>
+        </label>
+        <label>Teaching tree size
+          <input id="teachingSteps" type="range" min="2" max="5" step="1" value="3" />
+        </label>
+        <div class="range-value" id="teachingStepsValue">3 steps</div>
+      </div>
+
+      <div class="tree-layout section">
+        <article>
+          <div class="svg-wrap">
+            <svg id="treeChart" viewBox="0 0 620 420" aria-label="Teaching tree"></svg>
+          </div>
+          <p class="tree-node-note" id="treeNote">Filled red nodes indicate places where immediate exercise beats continuation. Blue nodes indicate holding the option is better.</p>
+        </article>
+        <article class="node-detail" id="nodeDetail">
+          <h4>Node details</h4>
+          <p>Select a node in the tree to inspect the pricing decision at that point.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section chart-grid">
+      <article class="card">
+        <h3>Price Convergence</h3>
+        <p>The lines below show how both trees approach a stable answer as the number of time steps increases.</p>
+        <div class="svg-wrap">
+          <svg id="convergenceChart" viewBox="0 0 620 360" aria-label="Convergence chart"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#bc5a35"></span> Binomial</div>
+          <div class="legend-item"><span class="swatch" style="background:#176d77"></span> Trinomial</div>
+          <div class="legend-item"><span class="swatch" style="background:#d49f50"></span> European benchmark</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Runtime Comparison</h3>
+        <p>Pricing becomes more computationally expensive as the number of steps rises, especially for trees with more branches.</p>
+        <div class="svg-wrap">
+          <svg id="runtimeChart" viewBox="0 0 620 360" aria-label="Runtime chart"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#bc5a35"></span> Binomial runtime</div>
+          <div class="legend-item"><span class="swatch" style="background:#176d77"></span> Trinomial runtime</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section chart-grid">
+      <article class="card">
+        <h3>Early Exercise Boundary</h3>
+        <p>For puts, this boundary marks the approximate stock price below which early exercise becomes optimal. For calls without dividends, the boundary is often weak or absent.</p>
+        <div class="svg-wrap">
+          <svg id="boundaryChart" viewBox="0 0 620 360" aria-label="Boundary chart"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#bc5a35"></span> Binomial boundary</div>
+          <div class="legend-item"><span class="swatch" style="background:#176d77"></span> Trinomial boundary</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>What the Results Mean</h3>
+        <p>The interpretation below is generated from your current parameter choices, so the report teaches the numbers instead of just displaying them.</p>
+        <ul class="insight-list" id="insights"></ul>
+        <p class="footer-note">
+          This is a single self-contained <span class="mono">index.html</span> file for GitHub Pages. The separate Python script can be run in Colab to generate submission-ready CSVs and PNG graphs.
+        </p>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const comparisonSteps = [25, 50, 75, 100, 125, 150, 175, 200, 250, 300];
+    let selectedTeachingNodeKey = null;
+
+    function payoff(stockPrice, strike, optionType) {
+      if (optionType === "call") {
+        return Math.max(stockPrice - strike, 0);
+      }
+      return Math.max(strike - stockPrice, 0);
+    }
+
+    function normCdf(x) {
+      const sign = x < 0 ? -1 : 1;
+      const absX = Math.abs(x) / Math.sqrt(2);
+      const t = 1 / (1 + 0.3275911 * absX);
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const erf = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+      return 0.5 * (1 + sign * erf);
+    }
+
+    function formatNumber(value, digits = 4) {
+      if (!Number.isFinite(value)) return "N/A";
+      return Number(value).toFixed(digits);
+    }
+
+    function formatMoney(value) {
+      return formatNumber(value, 4);
+    }
+
+    function blackScholesPrice({ spot, strike, maturity, rate, volatility, dividendYield, optionType }) {
+      if (maturity <= 0) return payoff(spot, strike, optionType);
+      if (volatility <= 0) {
+        const forwardIntrinsic = spot * Math.exp(-dividendYield * maturity) - strike * Math.exp(-rate * maturity);
+        return optionType === "call" ? Math.max(forwardIntrinsic, 0) : Math.max(-forwardIntrinsic, 0);
+      }
+
+      const sqrtT = Math.sqrt(maturity);
+      const d1 = (Math.log(spot / strike) + (rate - dividendYield + 0.5 * volatility * volatility) * maturity) / (volatility * sqrtT);
+      const d2 = d1 - volatility * sqrtT;
+      const discountedSpot = spot * Math.exp(-dividendYield * maturity);
+      const discountedStrike = strike * Math.exp(-rate * maturity);
+
+      if (optionType === "call") {
+        return discountedSpot * normCdf(d1) - discountedStrike * normCdf(d2);
+      }
+      return discountedStrike * normCdf(-d2) - discountedSpot * normCdf(-d1);
+    }
+
+    function americanOptionBinomial({ spot, strike, maturity, rate, volatility, dividendYield, steps, optionType, returnBoundary = false }) {
+      const dt = maturity / steps;
+      const u = Math.exp(volatility * Math.sqrt(dt));
+      const d = 1 / u;
+      const growth = Math.exp((rate - dividendYield) * dt);
+      const p = (growth - d) / (u - d);
+      const discount = Math.exp(-rate * dt);
+
+      let stockPrices = [];
+      let optionValues = [];
+      for (let j = 0; j <= steps; j++) {
+        const s = spot * Math.pow(u, j) * Math.pow(d, steps - j);
+        stockPrices.push(s);
+        optionValues.push(payoff(s, strike, optionType));
+      }
+
+      const boundary = new Array(steps + 1).fill(NaN);
+      const times = Array.from({ length: steps + 1 }, (_, i) => i * dt);
+
+      for (let i = steps - 1; i >= 0; i--) {
+        const nextStock = [];
+        const nextValues = [];
+        const exercised = [];
+
+        for (let j = 0; j <= i; j++) {
+          const s = stockPrices[j] / d;
+          const continuation = discount * (p * optionValues[j + 1] + (1 - p) * optionValues[j]);
+          const intrinsic = payoff(s, strike, optionType);
+          nextStock.push(s);
+          nextValues.push(Math.max(intrinsic, continuation));
+          if (intrinsic > continuation) exercised.push(s);
+        }
+
+        stockPrices = nextStock;
+        optionValues = nextValues;
+
+        if (returnBoundary && exercised.length > 0) {
+          boundary[i] = optionType === "put" ? Math.max(...exercised) : Math.min(...exercised);
+        }
+      }
+
+      return { price: optionValues[0], boundary, times, u, d, p, dt, discount };
+    }
+
+    function americanOptionTrinomial({ spot, strike, maturity, rate, volatility, dividendYield, steps, optionType, returnBoundary = false }) {
+      const dt = maturity / steps;
+      const up = Math.exp(volatility * Math.sqrt(2 * dt));
+      const discount = Math.exp(-rate * dt);
+      const expHalfDrift = Math.exp((rate - dividendYield) * dt / 2);
+      const expUpHalf = Math.exp(volatility * Math.sqrt(dt / 2));
+      const expDownHalf = Math.exp(-volatility * Math.sqrt(dt / 2));
+      const denominator = expUpHalf - expDownHalf;
+
+      let pUp = Math.pow((expHalfDrift - expDownHalf) / denominator, 2);
+      let pDown = Math.pow((expUpHalf - expHalfDrift) / denominator, 2);
+      let pMid = 1 - pUp - pDown;
+
+      pUp = Math.max(0, pUp);
+      pMid = Math.max(0, pMid);
+      pDown = Math.max(0, pDown);
+      const total = pUp + pMid + pDown;
+      pUp /= total;
+      pMid /= total;
+      pDown /= total;
+
+      let optionValues = new Array(2 * steps + 1).fill(0);
+      for (let k = -steps; k <= steps; k++) {
+        const s = spot * Math.pow(up, k);
+        optionValues[k + steps] = payoff(s, strike, optionType);
+      }
+
+      const boundary = new Array(steps + 1).fill(NaN);
+      const times = Array.from({ length: steps + 1 }, (_, i) => i * dt);
+
+      for (let i = steps - 1; i >= 0; i--) {
+        const next = new Array(2 * steps + 1).fill(0);
+        const exercised = [];
+
+        for (let k = -i; k <= i; k++) {
+          const s = spot * Math.pow(up, k);
+          const continuation = discount * (
+            pUp * optionValues[k + steps + 1] +
+            pMid * optionValues[k + steps] +
+            pDown * optionValues[k + steps - 1]
+          );
+          const intrinsic = payoff(s, strike, optionType);
+          next[k + steps] = Math.max(intrinsic, continuation);
+          if (intrinsic > continuation) exercised.push(s);
+        }
+
+        optionValues = next;
+
+        if (returnBoundary && exercised.length > 0) {
+          boundary[i] = optionType === "put" ? Math.max(...exercised) : Math.min(...exercised);
+        }
+      }
+
+      return { price: optionValues[steps], boundary, times, up, pUp, pMid, pDown, dt, discount };
+    }
+
+    function buildStudy(inputs) {
+      return comparisonSteps.map((steps) => {
+        const params = { ...inputs, steps };
+        const t0 = performance.now();
+        const binomial = americanOptionBinomial(params);
+        const t1 = performance.now();
+        const trinomial = americanOptionTrinomial(params);
+        const t2 = performance.now();
+
+        return {
+          steps,
+          binomialPrice: binomial.price,
+          trinomialPrice: trinomial.price,
+          europeanPrice: blackScholesPrice(params),
+          binomialRuntime: t1 - t0,
+          trinomialRuntime: t2 - t1
+        };
+      });
+    }
+
+    function getInputs() {
+      return {
+        spot: Number(document.getElementById("spot").value),
+        strike: Number(document.getElementById("strike").value),
+        maturity: Number(document.getElementById("maturity").value),
+        rate: Number(document.getElementById("rate").value),
+        volatility: Number(document.getElementById("volatility").value),
+        dividendYield: Number(document.getElementById("dividend").value),
+        steps: Number(document.getElementById("steps").value),
+        optionType: document.getElementById("optionType").value
+      };
+    }
+
+    function setMetrics(result) {
+      const premiumBinomial = result.binomial - result.european;
+      const premiumTrinomial = result.trinomial - result.european;
+      const gap = Math.abs(result.binomial - result.trinomial);
+
+      const cards = [
+        {
+          label: "European Benchmark",
+          value: formatMoney(result.european),
+          sub: "Black-Scholes price for the same payoff but without early exercise."
+        },
+        {
+          label: "American Binomial",
+          value: formatMoney(result.binomial),
+          sub: `Early exercise premium relative to European: ${formatMoney(premiumBinomial)}`
+        },
+        {
+          label: "American Trinomial",
+          value: formatMoney(result.trinomial),
+          sub: `Early exercise premium relative to European: ${formatMoney(premiumTrinomial)}`
+        },
+        {
+          label: "Method Gap",
+          value: formatMoney(gap),
+          sub: "Absolute difference between the binomial and trinomial estimates."
+        },
+        {
+          label: "Binomial Runtime",
+          value: `${result.binomialRuntime.toFixed(3)} ms`,
+          sub: `Computed with ${result.steps} steps in your browser.`
+        },
+        {
+          label: "Trinomial Runtime",
+          value: `${result.trinomialRuntime.toFixed(3)} ms`,
+          sub: `Computed with ${result.steps} steps in your browser.`
+        }
+      ];
+
+      document.getElementById("metrics").innerHTML = cards.map((card) => `
+        <article class="metric">
+          <div class="metric-label">${card.label}</div>
+          <div class="metric-value">${card.value}</div>
+          <div class="metric-sub">${card.sub}</div>
+        </article>
+      `).join("");
+    }
+
+    function updateFormulaExplorer(inputs, binomialResult) {
+      const immediatePayoff = payoff(inputs.spot, inputs.strike, inputs.optionType);
+      const europeanProxy = blackScholesPrice(inputs);
+
+      document.getElementById("dtValue").textContent =
+        `Using T = ${formatNumber(inputs.maturity, 2)} and N = ${inputs.steps}, we get Δt = ${formatNumber(binomialResult.dt, 6)} years per step.`;
+
+      document.getElementById("udValue").textContent =
+        `u = ${formatNumber(binomialResult.u, 6)} and d = ${formatNumber(binomialResult.d, 6)}. These are the one-step stock multipliers in the binomial model.`;
+
+      document.getElementById("pValue").textContent =
+        `With r = ${formatNumber(inputs.rate, 4)}, q = ${formatNumber(inputs.dividendYield, 4)}, u = ${formatNumber(binomialResult.u, 6)}, and d = ${formatNumber(binomialResult.d, 6)}, the pricing probability is p = ${formatNumber(binomialResult.p, 6)}.`;
+
+      document.getElementById("decisionValue").textContent =
+        `At the starting node, immediate exercise gives ${formatMoney(immediatePayoff)} while holding the option leads to the model value ${formatMoney(binomialResult.price)}. The European benchmark is ${formatMoney(europeanProxy)}.`;
+    }
+
+    function renderLineChart(svgId, series, options) {
+      const svg = document.getElementById(svgId);
+      const width = 620;
+      const height = 360;
+      const margin = { top: 20, right: 18, bottom: 42, left: 58 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+
+      const xValues = series.flatMap((entry) => entry.points.map((point) => point.x));
+      const yValues = series
+        .flatMap((entry) => entry.points.map((point) => point.y))
+        .filter((value) => Number.isFinite(value));
+
+      const xMin = Math.min(...xValues);
+      const xMax = Math.max(...xValues);
+      let yMin = Math.min(...yValues);
+      let yMax = Math.max(...yValues);
+      if (yMin === yMax) {
+        yMin -= 1;
+        yMax += 1;
+      }
+      const pad = (yMax - yMin) * 0.08;
+      yMin -= pad;
+      yMax += pad;
+
+      const xScale = (x) => margin.left + ((x - xMin) / (xMax - xMin || 1)) * innerWidth;
+      const yScale = (y) => margin.top + innerHeight - ((y - yMin) / (yMax - yMin || 1)) * innerHeight;
+
+      const yTicks = 5;
+      const xTicks = [...new Set(xValues)];
+      const grid = [];
+
+      for (let i = 0; i <= yTicks; i++) {
+        const value = yMin + ((yMax - yMin) * i) / yTicks;
+        const y = yScale(value);
+        grid.push(`<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="rgba(17,38,61,0.10)" stroke-dasharray="3 6" />`);
+        grid.push(`<text x="${margin.left - 10}" y="${y + 4}" text-anchor="end" fill="#607084" font-size="11">${value.toFixed(2)}</text>`);
+      }
+
+      const xLabels = xTicks.map((value) => {
+        const x = xScale(value);
+        return `
+          <line x1="${x}" y1="${height - margin.bottom}" x2="${x}" y2="${height - margin.bottom + 6}" stroke="rgba(17,38,61,0.28)" />
+          <text x="${x}" y="${height - margin.bottom + 22}" text-anchor="middle" fill="#607084" font-size="11">${value}</text>
+        `;
+      }).join("");
+
+      const paths = series.map((entry) => {
+        const validPoints = entry.points.filter((point) => Number.isFinite(point.y));
+        const path = validPoints
+          .map((point, index) => `${index === 0 ? "M" : "L"} ${xScale(point.x)} ${yScale(point.y)}`)
+          .join(" ");
+        const dots = validPoints
+          .map((point) => `<circle cx="${xScale(point.x)}" cy="${yScale(point.y)}" r="3.1" fill="${entry.color}" />`)
+          .join("");
+        return `<path d="${path}" fill="none" stroke="${entry.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />${dots}`;
+      }).join("");
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+        ${grid.join("")}
+        <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="rgba(17,38,61,0.28)" />
+        <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="rgba(17,38,61,0.28)" />
+        ${xLabels}
+        ${paths}
+        <text x="${width / 2}" y="${height - 8}" text-anchor="middle" fill="#607084" font-size="12">${options.xLabel}</text>
+        <text x="18" y="${height / 2}" text-anchor="middle" fill="#607084" font-size="12" transform="rotate(-90 18 ${height / 2})">${options.yLabel}</text>
+      `;
+    }
+
+    function renderBoundaryChart(binomialBoundary, trinomialBoundary, times) {
+      renderLineChart("boundaryChart", [
+        {
+          color: "#bc5a35",
+          points: times.map((time, index) => ({ x: time, y: binomialBoundary[index] }))
+        },
+        {
+          color: "#176d77",
+          points: times.map((time, index) => ({ x: time, y: trinomialBoundary[index] }))
+        }
+      ], {
+        xLabel: "Time",
+        yLabel: "Critical stock price"
+      });
+    }
+
+    function buildTeachingBinomialTree(inputs, teachingSteps) {
+      const dt = inputs.maturity / teachingSteps;
+      const u = Math.exp(inputs.volatility * Math.sqrt(dt));
+      const d = 1 / u;
+      const growth = Math.exp((inputs.rate - inputs.dividendYield) * dt);
+      const p = (growth - d) / (u - d);
+      const discount = Math.exp(-inputs.rate * dt);
+      const levels = [];
+
+      for (let i = 0; i <= teachingSteps; i++) {
+        const level = [];
+        for (let j = 0; j <= i; j++) {
+          const stock = inputs.spot * Math.pow(u, j) * Math.pow(d, i - j);
+          level.push({
+            key: `${i}-${j}`,
+            step: i,
+            upMoves: j,
+            stock,
+            intrinsic: payoff(stock, inputs.strike, inputs.optionType),
+            continuation: i === teachingSteps ? NaN : 0,
+            value: 0,
+            exerciseNow: false
+          });
+        }
+        levels.push(level);
+      }
+
+      levels[teachingSteps].forEach((node) => {
+        node.value = node.intrinsic;
+        node.exerciseNow = node.intrinsic > 0;
+      });
+
+      for (let i = teachingSteps - 1; i >= 0; i--) {
+        for (let j = 0; j <= i; j++) {
+          const node = levels[i][j];
+          const downNode = levels[i + 1][j];
+          const upNode = levels[i + 1][j + 1];
+          node.continuation = discount * (p * upNode.value + (1 - p) * downNode.value);
+          node.value = Math.max(node.intrinsic, node.continuation);
+          node.exerciseNow = node.intrinsic > node.continuation;
+        }
+      }
+
+      return { levels, u, d, p, dt, discount, model: "binomial" };
+    }
+
+    function buildTeachingTrinomialTree(inputs, teachingSteps) {
+      const dt = inputs.maturity / teachingSteps;
+      const up = Math.exp(inputs.volatility * Math.sqrt(2 * dt));
+      const discount = Math.exp(-inputs.rate * dt);
+      const expHalfDrift = Math.exp((inputs.rate - inputs.dividendYield) * dt / 2);
+      const expUpHalf = Math.exp(inputs.volatility * Math.sqrt(dt / 2));
+      const expDownHalf = Math.exp(-inputs.volatility * Math.sqrt(dt / 2));
+      const denominator = expUpHalf - expDownHalf;
+
+      let pUp = Math.pow((expHalfDrift - expDownHalf) / denominator, 2);
+      let pDown = Math.pow((expUpHalf - expHalfDrift) / denominator, 2);
+      let pMid = 1 - pUp - pDown;
+
+      pUp = Math.max(0, pUp);
+      pMid = Math.max(0, pMid);
+      pDown = Math.max(0, pDown);
+      const total = pUp + pMid + pDown;
+      pUp /= total;
+      pMid /= total;
+      pDown /= total;
+
+      const levels = [];
+      const nodesByKey = new Map();
+
+      for (let i = 0; i <= teachingSteps; i++) {
+        const level = [];
+        for (let k = -i; k <= i; k++) {
+          const stock = inputs.spot * Math.pow(up, k);
+          const node = {
+            key: `${i}-${k}`,
+            step: i,
+            stateIndex: k,
+            stock,
+            intrinsic: payoff(stock, inputs.strike, inputs.optionType),
+            continuation: i === teachingSteps ? NaN : 0,
+            value: 0,
+            exerciseNow: false
+          };
+          level.push(node);
+          nodesByKey.set(node.key, node);
+        }
+        levels.push(level);
+      }
+
+      levels[teachingSteps].forEach((node) => {
+        node.value = node.intrinsic;
+        node.exerciseNow = node.intrinsic > 0;
+      });
+
+      for (let i = teachingSteps - 1; i >= 0; i--) {
+        for (let k = -i; k <= i; k++) {
+          const node = nodesByKey.get(`${i}-${k}`);
+          const upNode = nodesByKey.get(`${i + 1}-${k + 1}`);
+          const midNode = nodesByKey.get(`${i + 1}-${k}`);
+          const downNode = nodesByKey.get(`${i + 1}-${k - 1}`);
+          node.continuation = discount * (
+            pUp * upNode.value +
+            pMid * midNode.value +
+            pDown * downNode.value
+          );
+          node.value = Math.max(node.intrinsic, node.continuation);
+          node.exerciseNow = node.intrinsic > node.continuation;
+        }
+      }
+
+      return {
+        levels,
+        up,
+        mid: 1,
+        down: 1 / up,
+        pUp,
+        pMid,
+        pDown,
+        dt,
+        discount,
+        model: "trinomial"
+      };
+    }
+
+    function updateNodeDetail(node, inputs, teachingMeta) {
+      const optionLabel = inputs.optionType === "call" ? "call" : "put";
+      const holdClass = node.exerciseNow ? "badge-exercise" : "badge-hold";
+      const holdText = node.exerciseNow ? "Exercise is better here" : "Holding is better here";
+      const modelLine = teachingMeta.model === "trinomial"
+        ? `In this trinomial tree, u = ${formatNumber(teachingMeta.up, 4)}, m = 1.0000, d = ${formatNumber(teachingMeta.down, 4)}, p_up = ${formatNumber(teachingMeta.pUp, 4)}, p_mid = ${formatNumber(teachingMeta.pMid, 4)}, p_down = ${formatNumber(teachingMeta.pDown, 4)}, and Δt = ${formatNumber(teachingMeta.dt, 4)}.`
+        : `In this binomial tree, u = ${formatNumber(teachingMeta.u, 4)}, d = ${formatNumber(teachingMeta.d, 4)}, p = ${formatNumber(teachingMeta.p, 4)}, and Δt = ${formatNumber(teachingMeta.dt, 4)}.`;
+      const nodeStateLabel = teachingMeta.model === "trinomial"
+        ? `State index = ${node.stateIndex}`
+        : `Up moves = ${node.upMoves}`;
+
+      document.getElementById("nodeDetail").innerHTML = `
+        <h4>Node at step ${node.step}</h4>
+        <p>This node represents one possible market state after <strong>${node.step}</strong> periods in the teaching tree.</p>
+        <div class="node-detail-grid">
+          <div><strong>Node position</strong><br />${nodeStateLabel}</div>
+          <div><strong>Stock price</strong><br />S = ${formatMoney(node.stock)}</div>
+          <div><strong>Intrinsic value</strong><br />Immediate ${optionLabel} payoff = ${formatMoney(node.intrinsic)}</div>
+          <div><strong>Continuation value</strong><br />Discounted expected future value = ${Number.isFinite(node.continuation) ? formatMoney(node.continuation) : "At maturity, no continuation"}</div>
+          <div><strong>American value</strong><br />V = max(intrinsic, continuation) = ${formatMoney(node.value)}</div>
+        </div>
+        <div class="inline-badge ${holdClass}">${holdText}</div>
+        <p class="tree-node-note">
+          ${modelLine}
+        </p>
+      `;
+    }
+
+    function renderTeachingTree(inputs) {
+      const teachingSteps = Number(document.getElementById("teachingSteps").value);
+      const treeType = document.getElementById("teachingTreeType").value;
+      document.getElementById("teachingStepsValue").textContent = `${teachingSteps} steps`;
+      document.getElementById("treeNote").textContent = treeType === "trinomial"
+        ? "Filled red nodes indicate places where immediate exercise beats continuation. Blue nodes indicate holding the option is better. In the trinomial tree, each node can branch upward, stay in the middle, or move downward."
+        : "Filled red nodes indicate places where immediate exercise beats continuation. Blue nodes indicate holding the option is better. In the binomial tree, each node branches only to an up state or a down state.";
+
+      const tree = treeType === "trinomial"
+        ? buildTeachingTrinomialTree(inputs, teachingSteps)
+        : buildTeachingBinomialTree(inputs, teachingSteps);
+      const svg = document.getElementById("treeChart");
+      const width = 620;
+      const height = 420;
+      const marginX = 70;
+      const marginY = 48;
+      const usableWidth = width - marginX * 2;
+      const usableHeight = height - marginY * 2;
+
+      const flatNodes = [];
+      tree.levels.forEach((level, i) => {
+        const x = marginX + (usableWidth * i) / teachingSteps;
+        level.forEach((node, j) => {
+          const y = marginY + (usableHeight * (j + 0.5)) / level.length;
+          flatNodes.push({ ...node, x, y });
+        });
+      });
+
+      if (!selectedTeachingNodeKey) {
+        selectedTeachingNodeKey = "0-0";
+      }
+
+      const segments = [];
+      for (let i = 0; i < tree.levels.length - 1; i++) {
+        for (let j = 0; j < tree.levels[i].length; j++) {
+          const current = flatNodes.find((node) => node.key === tree.levels[i][j].key);
+          if (tree.model === "trinomial") {
+            const down = flatNodes.find((node) => node.key === `${i + 1}-${current.stateIndex - 1}`);
+            const mid = flatNodes.find((node) => node.key === `${i + 1}-${current.stateIndex}`);
+            const up = flatNodes.find((node) => node.key === `${i + 1}-${current.stateIndex + 1}`);
+            segments.push(`<line x1="${current.x}" y1="${current.y}" x2="${down.x}" y2="${down.y}" stroke="rgba(17,38,61,0.18)" stroke-width="1.4" />`);
+            segments.push(`<line x1="${current.x}" y1="${current.y}" x2="${mid.x}" y2="${mid.y}" stroke="rgba(17,38,61,0.18)" stroke-width="1.4" />`);
+            segments.push(`<line x1="${current.x}" y1="${current.y}" x2="${up.x}" y2="${up.y}" stroke="rgba(17,38,61,0.18)" stroke-width="1.4" />`);
+          } else {
+            const down = flatNodes.find((node) => node.key === `${i + 1}-${j}`);
+            const up = flatNodes.find((node) => node.key === `${i + 1}-${j + 1}`);
+            segments.push(`<line x1="${current.x}" y1="${current.y}" x2="${down.x}" y2="${down.y}" stroke="rgba(17,38,61,0.18)" stroke-width="1.6" />`);
+            segments.push(`<line x1="${current.x}" y1="${current.y}" x2="${up.x}" y2="${up.y}" stroke="rgba(17,38,61,0.18)" stroke-width="1.6" />`);
+          }
+        }
+      }
+
+      const circles = flatNodes.map((node) => {
+        const selected = node.key === selectedTeachingNodeKey;
+        const fill = node.exerciseNow ? "#bc5a35" : "#176d77";
+        const radius = selected ? 17 : 13;
+        const stroke = selected ? "#d49f50" : "rgba(255,255,255,0.95)";
+        const label = tree.model === "trinomial" ? `${node.step},${node.stateIndex}` : `${node.step},${node.upMoves}`;
+        return `
+          <g class="tree-node" data-node-key="${node.key}" style="cursor:pointer">
+            <circle cx="${node.x}" cy="${node.y}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${selected ? 4 : 2}" />
+            <text x="${node.x}" y="${node.y + 4}" text-anchor="middle" fill="white" font-size="10" font-weight="700">${label}</text>
+            <text x="${node.x}" y="${node.y - 24}" text-anchor="middle" fill="#11263d" font-size="10">S=${formatMoney(node.stock)}</text>
+          </g>
+        `;
+      }).join("");
+
+      svg.innerHTML = `
+        <rect x="0" y="0" width="${width}" height="${height}" fill="transparent"></rect>
+        ${segments.join("")}
+        ${circles}
+      `;
+
+      svg.querySelectorAll(".tree-node").forEach((element) => {
+        element.addEventListener("click", () => {
+          selectedTeachingNodeKey = element.getAttribute("data-node-key");
+          renderTeachingTree(inputs);
+        });
+      });
+
+      const selectedNode = flatNodes.find((node) => node.key === selectedTeachingNodeKey) || flatNodes[0];
+      updateNodeDetail(selectedNode, inputs, tree);
+    }
+
+    function renderInsights(inputs, result, study) {
+      const last = study[study.length - 1];
+      const premium = result.binomial - result.european;
+      const gap = Math.abs(result.binomial - result.trinomial);
+      const nonDividendCall = inputs.optionType === "call" && Math.abs(inputs.dividendYield) < 1e-10;
+
+      const items = [
+        `${inputs.optionType === "put" ? "The American put" : "The American call"} is priced at ${formatMoney(result.binomial)} by the binomial tree and ${formatMoney(result.trinomial)} by the trinomial tree using ${inputs.steps} steps.`,
+        `The European benchmark is ${formatMoney(result.european)}, so the estimated early exercise premium is about ${formatMoney(premium)} under the binomial model.`,
+        `Across the largest comparison grid, the gap between the two numerical methods is only ${formatMoney(Math.abs(last.binomialPrice - last.trinomialPrice))}, which suggests the estimates are converging toward a similar value.`,
+        gap < 0.01
+          ? "The two methods are currently very close, which is a good sign that the numerical approximation is stable."
+          : "The two methods are still a bit apart, which means increasing the number of steps may help the estimates stabilize further."
+      ];
+
+      if (nonDividendCall) {
+        items.push("Because this is a non-dividend-paying American call, early exercise is usually not optimal, so the American and European prices should remain close.");
+      } else if (inputs.optionType === "put") {
+        items.push("For American puts, early exercise can be rational when the stock price becomes low enough, which is why the American price often exceeds the European price.");
+      } else {
+        items.push("If dividends are present, early exercise for a call can become more attractive, which may push the American call above the European value.");
+      }
+
+      items.push("The trinomial tree usually takes a little longer because each node branches into three future states instead of two.");
+
+      document.getElementById("insights").innerHTML = items.map((item) => `<li>${item}</li>`).join("");
+    }
+
+    function runAnalysis() {
+      const inputs = getInputs();
+      const t0 = performance.now();
+      const binomial = americanOptionBinomial({ ...inputs, returnBoundary: true });
+      const t1 = performance.now();
+      const trinomial = americanOptionTrinomial({ ...inputs, returnBoundary: true });
+      const t2 = performance.now();
+      const european = blackScholesPrice(inputs);
+      const study = buildStudy(inputs);
+
+      setMetrics({
+        european,
+        binomial: binomial.price,
+        trinomial: trinomial.price,
+        binomialRuntime: t1 - t0,
+        trinomialRuntime: t2 - t1,
+        steps: inputs.steps
+      });
+
+      updateFormulaExplorer(inputs, binomial);
+      renderTeachingTree(inputs);
+
+      renderLineChart("convergenceChart", [
+        {
+          color: "#bc5a35",
+          points: study.map((row) => ({ x: row.steps, y: row.binomialPrice }))
+        },
+        {
+          color: "#176d77",
+          points: study.map((row) => ({ x: row.steps, y: row.trinomialPrice }))
+        },
+        {
+          color: "#d49f50",
+          points: study.map((row) => ({ x: row.steps, y: row.europeanPrice }))
+        }
+      ], {
+        xLabel: "Time steps",
+        yLabel: "Option price"
+      });
+
+      renderLineChart("runtimeChart", [
+        {
+          color: "#bc5a35",
+          points: study.map((row) => ({ x: row.steps, y: row.binomialRuntime }))
+        },
+        {
+          color: "#176d77",
+          points: study.map((row) => ({ x: row.steps, y: row.trinomialRuntime }))
+        }
+      ], {
+        xLabel: "Time steps",
+        yLabel: "Runtime (ms)"
+      });
+
+      renderBoundaryChart(binomial.boundary, trinomial.boundary, binomial.times);
+      renderInsights(inputs, { european, binomial: binomial.price, trinomial: trinomial.price }, study);
+    }
+
+    function applyPreset(optionType) {
+      document.getElementById("spot").value = 100;
+      document.getElementById("strike").value = 100;
+      document.getElementById("maturity").value = 1;
+      document.getElementById("rate").value = 0.06;
+      document.getElementById("volatility").value = 0.20;
+      document.getElementById("dividend").value = 0.00;
+      document.getElementById("steps").value = 200;
+      document.getElementById("optionType").value = optionType;
+      selectedTeachingNodeKey = "0-0";
+      runAnalysis();
+    }
+
+    document.getElementById("runBtn").addEventListener("click", runAnalysis);
+    document.getElementById("presetPutBtn").addEventListener("click", () => applyPreset("put"));
+    document.getElementById("presetCallBtn").addEventListener("click", () => applyPreset("call"));
+    document.getElementById("teachingSteps").addEventListener("input", () => {
+      selectedTeachingNodeKey = "0-0";
+      runAnalysis();
+    });
+    document.getElementById("teachingTreeType").addEventListener("change", () => {
+      selectedTeachingNodeKey = "0-0";
+      runAnalysis();
+    });
+
+    runAnalysis();
+  </script>
+</body>
+</html>
