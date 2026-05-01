@@ -1,0 +1,13 @@
+metric,value
+European put (Black-Scholes),5.1660025110508485
+"American put (Binomial, final grid)",5.796398710093057
+"American put (Trinomial, final grid)",5.796211498738672
+American put premium vs European (Binomial),0.6303961990422087
+American put premium vs European (Trinomial),0.6302089876878236
+Refined American put (Binomial),5.798195654774884
+Refined American put (Trinomial),5.797333081296709
+European call (Black-Scholes),10.989549152625983
+"American call (Binomial, final grid)",10.982841253425645
+"American call (Trinomial, final grid)",10.986194501284407
+American call minus European call (Binomial),-0.0067078992003377635
+American call minus European call (Trinomial),-0.003354651341576087
